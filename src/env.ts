@@ -3,8 +3,8 @@ import { z } from 'zod';
 const requiredString = (name: string) => z.string().min(1, `${name} is required`);
 
 const serverSchema = z.object({
-  TFL_APP_ID: requiredString('TFL_APP_ID'),
-  TFL_APP_KEY: requiredString('TFL_APP_KEY'),
+  TFL_APP_ID: z.string().min(1).optional(), // Optional until TfL API integration is implemented
+  TFL_APP_KEY: z.string().min(1).optional(), // Optional until TfL API integration is implemented
   UPSTASH_REDIS_REST_URL: z.string().url('UPSTASH_REDIS_REST_URL must be a valid URL').optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   KV_URL: z.string().url('KV_URL must be a valid URL').optional(),
@@ -33,8 +33,8 @@ const formatErrors = (errors: z.ZodIssue[]) =>
     .join('\n');
 
 const serverResult = serverSchema.safeParse({
-  TFL_APP_ID: process.env.TFL_APP_ID,
-  TFL_APP_KEY: process.env.TFL_APP_KEY,
+  TFL_APP_ID: coerceOptional(process.env.TFL_APP_ID),
+  TFL_APP_KEY: coerceOptional(process.env.TFL_APP_KEY),
   UPSTASH_REDIS_REST_URL: coerceOptional(process.env.UPSTASH_REDIS_REST_URL),
   UPSTASH_REDIS_REST_TOKEN: coerceOptional(process.env.UPSTASH_REDIS_REST_TOKEN),
   KV_URL: coerceOptional(process.env.KV_URL),
