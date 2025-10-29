@@ -1,4 +1,7 @@
+'use client';
+
 import type { WalkPlanData } from './walk-planner-form';
+import RouteMap from './route-map';
 
 interface RouteDisplayProps {
   planData: WalkPlanData;
@@ -68,15 +71,27 @@ export function RouteDisplay({ planData, onReset }: RouteDisplayProps) {
             </div>
           </div>
 
+          {/* Interactive Map */}
+          <div className="mt-6">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">
+              Route Map
+            </h3>
+            <RouteMap
+              startLocation={planData.startLocation}
+              destination={planData.destination}
+              className="h-96"
+            />
+          </div>
+
           {/* Next Steps */}
           <div className="mt-6 rounded-lg bg-slate-900/50 p-4">
             <h3 className="mb-2 text-sm font-semibold text-slate-200">
               Next Steps
             </h3>
             <p className="text-sm leading-relaxed text-slate-400">
-              Route calculation is coming soon! The next development phase will
-              integrate with the TfL API to fetch real-time walking and Tube
-              routes. For now, this demonstrates the form capture and data flow.
+              The map shows your start and destination points. Advanced routing
+              with TfL API integration (walking + Tube segments) is coming in
+              the next phase.
             </p>
           </div>
 
