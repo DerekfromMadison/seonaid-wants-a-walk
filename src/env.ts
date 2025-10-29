@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-const requiredString = (name: string) => z.string().min(1, `${name} is required`);
-
 const serverSchema = z.object({
   TFL_APP_ID: z.string().min(1).optional(), // Optional until TfL API integration is implemented
   TFL_APP_KEY: z.string().min(1).optional(), // Optional until TfL API integration is implemented
@@ -15,8 +13,8 @@ const serverSchema = z.object({
 });
 
 const clientSchema = z.object({
-  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: requiredString('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN'),
-  NEXT_PUBLIC_MAPBOX_STYLE_ID: requiredString('NEXT_PUBLIC_MAPBOX_STYLE_ID'),
+  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: z.string().min(1).optional(), // Optional - map won't work without it
+  NEXT_PUBLIC_MAPBOX_STYLE_ID: z.string().min(1).default('streets-v12'), // Default to streets style
   NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_POSTHOG_HOST: z
     .string()
@@ -49,8 +47,8 @@ if (!serverResult.success) {
 }
 
 const clientResult = clientSchema.safeParse({
-  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-  NEXT_PUBLIC_MAPBOX_STYLE_ID: process.env.NEXT_PUBLIC_MAPBOX_STYLE_ID,
+  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: coerceOptional(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN),
+  NEXT_PUBLIC_MAPBOX_STYLE_ID: coerceOptional(process.env.NEXT_PUBLIC_MAPBOX_STYLE_ID),
   NEXT_PUBLIC_POSTHOG_KEY: coerceOptional(process.env.NEXT_PUBLIC_POSTHOG_KEY),
   NEXT_PUBLIC_POSTHOG_HOST: coerceOptional(process.env.NEXT_PUBLIC_POSTHOG_HOST),
 });
