@@ -24,7 +24,7 @@ export default function Home() {
               London Walk Companion
             </span>
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
-              Craft time-perfect walking adventures that blend London streets with timely Tube hops.
+              Craft time-perfect walking adventures that blend London streets with timely Tube hops. [v0.1.1]
             </h1>
             <p className="text-base leading-7 text-slate-300 sm:text-lg">
               Plan your journey across London with a mix of walking and Tube travel.
