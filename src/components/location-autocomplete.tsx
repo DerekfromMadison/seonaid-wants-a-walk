@@ -31,10 +31,11 @@ export function LocationAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [hasValidSelection, setHasValidSelection] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const hasMapboxToken = !!clientEnv.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -54,7 +55,7 @@ export function LocationAutocomplete({
   };
 
   const fetchSuggestions = async (query: string) => {
-    if (!query.trim() || query.length < 3) {
+    if (!query.trim() || query.length < 3 || !hasMapboxToken) {
       setSuggestions([]);
       return;
     }
@@ -62,15 +63,10 @@ export function LocationAutocomplete({
     // Don't fetch if it's coordinates
     if (isCoordinateValue(query)) {
       setSuggestions([]);
-      setHasValidSelection(true);
       return;
     }
 
     const accessToken = clientEnv.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-    if (!accessToken) {
-      console.error('Mapbox access token not configured');
-      return;
-    }
 
     setIsLoading(true);
 
@@ -97,8 +93,13 @@ export function LocationAutocomplete({
   };
 
   const handleInputChange = (newValue: string) => {
+    // When no Mapbox token, just accept any input
+    if (!hasMapboxToken) {
+      onChange(newValue, undefined);
+      return;
+    }
+
     onChange(newValue);
-    setHasValidSelection(false);
     setSelectedIndex(-1);
 
     // Clear existing timer
@@ -114,7 +115,6 @@ export function LocationAutocomplete({
 
   const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
     onChange(suggestion.place_name, suggestion.center);
-    setHasValidSelection(true);
     setSuggestions([]);
     setShowSuggestions(false);
     setSelectedIndex(-1);
@@ -147,14 +147,27 @@ export function LocationAutocomplete({
     }
   };
 
-  const getValidationColor = () => {
-    if (!value) return 'border-slate-600';
-    if (isCoordinateValue(value) || hasValidSelection) return 'border-green-600';
-    if (value.length >= 3 && !isLoading && suggestions.length === 0) {
-      return 'border-red-600';
-    }
-    return 'border-slate-600';
-  };
+  // Simple input without autocomplete if no token
+  if (!hasMapboxToken) {
+    return (
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          id={id}
+          value={value}
+          onChange={(e) => handleInputChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`w-full rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3 text-slate-100 placeholder-slate-500 transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 ${className}`}
+          required
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Enter location name, address, or postcode
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -171,27 +184,17 @@ export function LocationAutocomplete({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border bg-slate-800/50 px-4 py-3 pr-10 text-slate-100 placeholder-slate-500 transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 ${getValidationColor()} ${className}`}
+          className={`w-full rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3 pr-10 text-slate-100 placeholder-slate-500 transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50 ${className}`}
+          required
         />
 
-        {/* Loading/Validation Indicator */}
+        {/* Loading Indicator */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          {isLoading ? (
+          {isLoading && (
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-600 border-t-slate-300"></div>
-          ) : value && hasValidSelection ? (
-            <span className="text-green-400">✓</span>
-          ) : value && value.length >= 3 && !isLoading && suggestions.length === 0 && !isCoordinateValue(value) ? (
-            <span className="text-red-400" title="No locations found">⚠</span>
-          ) : null}
+          )}
         </div>
       </div>
-
-      {/* Validation Message */}
-      {value && value.length >= 3 && !hasValidSelection && !isLoading && suggestions.length === 0 && !isCoordinateValue(value) && (
-        <p className="mt-1 text-xs text-red-400">
-          No locations found. Try a different search term.
-        </p>
-      )}
 
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
@@ -227,11 +230,10 @@ export function LocationAutocomplete({
       )}
 
       {/* Helper Text */}
-      {!value && (
-        <p className="mt-1 text-xs text-slate-400">
-          Start typing to see suggestions
-        </p>
-      )}
+      <p className="mt-1 text-xs text-slate-400">
+        Start typing to see suggestions
+      </p>
     </div>
   );
 }
+

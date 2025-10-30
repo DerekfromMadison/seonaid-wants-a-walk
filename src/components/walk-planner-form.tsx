@@ -21,8 +21,6 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [startValidated, setStartValidated] = useState(false);
-  const [destValidated, setDestValidated] = useState(false);
 
   const handleCaptureLocation = () => {
     if (!navigator.geolocation) {
@@ -38,7 +36,6 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
         const locationString = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
         setStartLocation(locationString);
         setUseCurrentLocation(true);
-        setStartValidated(true);
         setIsCapturingLocation(false);
       },
       (error) => {
@@ -55,9 +52,10 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate that locations are properly selected
-    if (!startValidated || !destValidated) {
-      setLocationError('Please select valid locations from the suggestions');
+    // Only require validation if autocomplete is enabled (Mapbox token present)
+    // When no token, user can type freely and geocoding happens at route calculation
+    if (!startLocation.trim() || !destination.trim()) {
+      setLocationError('Please enter both start and destination locations');
       return;
     }
 
@@ -69,16 +67,14 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
     });
   };
 
-  const handleStartLocationChange = (value: string, coordinates?: [number, number]) => {
+  const handleStartLocationChange = (value: string) => {
     setStartLocation(value);
-    setStartValidated(!!coordinates);
     setUseCurrentLocation(false);
     setLocationError(null);
   };
 
-  const handleDestinationChange = (value: string, coordinates?: [number, number]) => {
+  const handleDestinationChange = (value: string) => {
     setDestination(value);
-    setDestValidated(!!coordinates);
     setLocationError(null);
   };
 
