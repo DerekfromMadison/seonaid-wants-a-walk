@@ -140,52 +140,95 @@ export default function RouteMap({
     }
   };
 
-  // Draw a route line between two points
-  const drawRoute = (start: [number, number], end: [number, number]) => {
+  // Draw a route line between two points using Mapbox Directions API
+  const drawRoute = async (start: [number, number], end: [number, number]) => {
     if (!map.current) return;
 
-    // Create a simple straight line route (in production, you'd use Mapbox Directions API)
-    const routeGeoJSON: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: [start, end],
-          },
-        },
-      ],
-    };
-
-    // Check if the source already exists
-    if (map.current.getSource('route')) {
-      (map.current.getSource('route') as mapboxgl.GeoJSONSource).setData(
-        routeGeoJSON
+    try {
+      // Call Mapbox Directions API for walking route
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/walking/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&steps=true&access_token=${mapboxgl.accessToken}`
       );
-    } else {
-      // Add route source
-      map.current.addSource('route', {
-        type: 'geojson',
-        data: routeGeoJSON,
-      });
 
-      // Add route layer
-      map.current.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#3b82f6',
-          'line-width': 5,
-          'line-opacity': 0.75,
-        },
-      });
+      if (!response.ok) {
+        throw new Error('Directions request failed');
+      }
+
+      const data = await response.json();
+
+      if (!data.routes || data.routes.length === 0) {
+        console.error('No route found');
+        return;
+      }
+
+      const route = data.routes[0];
+      const routeGeoJSON: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {
+              duration: route.duration,
+              distance: route.distance,
+            },
+            geometry: route.geometry,
+          },
+        ],
+      };
+
+      // Check if the source already exists
+      if (map.current.getSource('route')) {
+        (map.current.getSource('route') as mapboxgl.GeoJSONSource).setData(
+          routeGeoJSON
+        );
+      } else {
+        // Add route source
+        map.current.addSource('route', {
+          type: 'geojson',
+          data: routeGeoJSON,
+        });
+
+        // Add route layer
+        map.current.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 5,
+            'line-opacity': 0.75,
+          },
+        });
+      }
+
+      // Route data is now handled by useRoute hook in parent component
+      // No need to store on map instance
+    } catch (error) {
+      console.error('Error fetching route:', error);
+      // Fallback to straight line if API fails
+      const routeGeoJSON: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: [start, end],
+            },
+          },
+        ],
+      };
+
+      if (map.current.getSource('route')) {
+        (map.current.getSource('route') as mapboxgl.GeoJSONSource).setData(
+          routeGeoJSON
+        );
+      }
     }
   };
 
