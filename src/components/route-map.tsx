@@ -19,11 +19,14 @@ export default function RouteMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
 
+  // Check if Mapbox token is available
+  const hasMapboxToken = clientEnv.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || !hasMapboxToken) return;
 
     // Initialize Mapbox
-    mapboxgl.accessToken = clientEnv.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    mapboxgl.accessToken = clientEnv.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN!;
 
     // Create map centered on London
     map.current = new mapboxgl.Map({
@@ -98,7 +101,7 @@ export default function RouteMap({
       map.current?.remove();
       map.current = null;
     };
-  }, [startLocation, destination]);
+  }, [startLocation, destination, hasMapboxToken]);
 
   // Geocode a location string to coordinates
   const geocodeLocation = async (
@@ -185,6 +188,37 @@ export default function RouteMap({
       });
     }
   };
+
+  // Show message if no Mapbox token is configured
+  if (!hasMapboxToken) {
+    return (
+      <div className={className}>
+        <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900/50 p-8">
+          <div className="max-w-md text-center">
+            <div className="mb-3 text-4xl">🗺️</div>
+            <h3 className="mb-2 text-lg font-semibold text-slate-200">
+              Map Configuration Required
+            </h3>
+            <p className="text-sm text-slate-400">
+              To display the interactive map, you need to add a Mapbox access
+              token to your environment variables. Get a free token at{' '}
+              <a
+                href="https://account.mapbox.com/access-tokens/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                account.mapbox.com
+              </a>
+            </p>
+            <p className="mt-3 text-xs text-slate-500">
+              Set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN in your environment
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
