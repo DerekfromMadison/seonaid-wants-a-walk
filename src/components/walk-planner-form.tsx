@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LocationAutocomplete } from './location-autocomplete';
 
 interface WalkPlannerFormProps {
   onPlanWalk: (data: WalkPlanData) => void;
@@ -20,6 +21,8 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [startValidated, setStartValidated] = useState(false);
+  const [destValidated, setDestValidated] = useState(false);
 
   const handleCaptureLocation = () => {
     if (!navigator.geolocation) {
@@ -32,10 +35,10 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setStartLocation(
-          `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
-        );
+        const locationString = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+        setStartLocation(locationString);
         setUseCurrentLocation(true);
+        setStartValidated(true);
         setIsCapturingLocation(false);
       },
       (error) => {
@@ -51,12 +54,32 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate that locations are properly selected
+    if (!startValidated || !destValidated) {
+      setLocationError('Please select valid locations from the suggestions');
+      return;
+    }
+
     onPlanWalk({
       startLocation,
       destination,
       duration,
       useCurrentLocation,
     });
+  };
+
+  const handleStartLocationChange = (value: string, coordinates?: [number, number]) => {
+    setStartLocation(value);
+    setStartValidated(!!coordinates);
+    setUseCurrentLocation(false);
+    setLocationError(null);
+  };
+
+  const handleDestinationChange = (value: string, coordinates?: [number, number]) => {
+    setDestination(value);
+    setDestValidated(!!coordinates);
+    setLocationError(null);
   };
 
   return (
@@ -71,18 +94,15 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
             Starting Location
           </label>
           <div className="flex gap-2">
-            <input
-              type="text"
-              id="start"
-              value={startLocation}
-              onChange={(e) => {
-                setStartLocation(e.target.value);
-                setUseCurrentLocation(false);
-              }}
-              placeholder="Enter station or postcode"
-              className="flex-1 rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50"
-              required
-            />
+            <div className="flex-1">
+              <LocationAutocomplete
+                id="start"
+                value={startLocation}
+                onChange={handleStartLocationChange}
+                placeholder="Enter station, postcode, or address"
+                className="w-full"
+              />
+            </div>
             <button
               type="button"
               onClick={handleCaptureLocation}
@@ -92,9 +112,6 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
               {isCapturingLocation ? 'Locating...' : '📍 Use Current'}
             </button>
           </div>
-          {locationError && (
-            <p className="text-sm text-red-400">{locationError}</p>
-          )}
         </div>
 
         {/* Destination */}
@@ -105,16 +122,18 @@ export function WalkPlannerForm({ onPlanWalk }: WalkPlannerFormProps) {
           >
             Destination
           </label>
-          <input
-            type="text"
+          <LocationAutocomplete
             id="destination"
             value={destination}
-            onChange={(e) => setDestination(e.target.value)}
+            onChange={handleDestinationChange}
             placeholder="Where do you want to go?"
-            className="w-full rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/50"
-            required
           />
         </div>
+
+        {/* Error Message */}
+        {locationError && (
+          <p className="text-sm text-red-400">{locationError}</p>
+        )}
 
         {/* Duration */}
         <div className="space-y-2">
