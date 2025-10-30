@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { WalkPlannerForm, type WalkPlanData } from '@/components/walk-planner-form';
 import { RouteDisplay } from '@/components/route-display';
+import packageJson from '../../package.json';
 
-const version = require('../../package.json').version;
+const version = packageJson.version;
 
 export default function Home() {
   const [walkPlan, setWalkPlan] = useState<WalkPlanData | null>(null);
